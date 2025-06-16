@@ -72,10 +72,6 @@ public sealed class Result<out V, out E> {
 /**
  * Represents a successful [Result], containing a [value].
  */
-@Deprecated(
-    message = "Using Ok as a return type is deprecated.",
-    replaceWith = ReplaceWith("Result<V, Nothing>"),
-)
 public class Ok<out V> internal constructor(
     override val value: V,
     @Suppress("UNUSED_PARAMETER") placeholder: Any?,
@@ -93,12 +89,12 @@ public class Ok<out V> internal constructor(
     override fun component2(): Nothing? = null
 
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
+        if (this===other) return true
+        if (other==null || this::class!=other::class) return false
 
         other as Ok<*>
 
-        if (value != other.value) return false
+        if (value!=other.value) return false
 
         return true
     }
@@ -110,10 +106,6 @@ public class Ok<out V> internal constructor(
 /**
  * Represents a failed [Result], containing an [error].
  */
-@Deprecated(
-    message = "Using Err as a return type is deprecated.",
-    replaceWith = ReplaceWith("Result<Nothing, E>"),
-)
 public class Err<out E> internal constructor(
     override val error: E,
     @Suppress("UNUSED_PARAMETER") placeholder: Any?,
@@ -131,12 +123,12 @@ public class Err<out E> internal constructor(
     override fun component2(): E = error
 
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
+        if (this===other) return true
+        if (other==null || this::class!=other::class) return false
 
         other as Err<*>
 
-        if (error != other.error) return false
+        if (error!=other.error) return false
 
         return true
     }

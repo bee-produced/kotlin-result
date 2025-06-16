@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "v1.1.22" ]
   push:
-    branches: [ "master" ]
+    branches: [ "master", "v1.1.22" ]
 
 permissions:
   contents: read
@@ -55,74 +55,101 @@ jobs:
       - name: Build with Gradle Wrapper
         run: ./gradlew ${{ matrix.tasks }}
 
-  publish:
-    name: Publish on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    if: github.ref == 'refs/heads/master' && github.repository == 'michaelbull/kotlin-result'
+      - name: Upload JAR artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-result-jar
+          path: kotlin-result/build/libs/kotlin-result-jvm-*.jar
+
+  release:
+    name: Publish JAR to GitHub Releases
     needs: build
-
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            tasks: >
-              publishAndroidNativeArm32PublicationToMavenRepository
-              publishAndroidNativeArm64PublicationToMavenRepository
-              publishAndroidNativeX64PublicationToMavenRepository
-              publishAndroidNativeX86PublicationToMavenRepository
-              publishJsPublicationToMavenRepository
-              publishJvmPublicationToMavenRepository
-              publishKotlinMultiplatformPublicationToMavenRepository
-              publishLinuxArm64PublicationToMavenRepository
-              publishLinuxX64PublicationToMavenRepository
-              publishWasmJsPublicationToMavenRepository
-
-          - os: windows-latest
-            tasks: publishMingwX64PublicationToMavenRepository
-
-          - os: macos-latest
-            tasks: >
-              publishIosArm64PublicationToMavenRepository
-              publishIosSimulatorArm64PublicationToMavenRepository
-              publishIosX64PublicationToMavenRepository
-              publishMacosArm64PublicationToMavenRepository
-              publishMacosX64PublicationToMavenRepository
-              publishTvosArm64PublicationToMavenRepository
-              publishTvosSimulatorArm64PublicationToMavenRepository
-              publishTvosX64PublicationToMavenRepository
-              publishWatchosArm32PublicationToMavenRepository
-              publishWatchosArm64PublicationToMavenRepository
-              publishWatchosDeviceArm64PublicationToMavenRepository
-              publishWatchosSimulatorArm64PublicationToMavenRepository
-              publishWatchosX64PublicationToMavenRepository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      - name: Checkout Project
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@699bb18358f12c5b78b37bb0111d3a0e2276e0e2 # v2.1.1
-
-      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+      - name: Download JAR from build job
+        uses: actions/download-artifact@v4
         with:
-          path: |
-            ~/.konan
-          key: ${{ runner.os }}-${{ hashFiles('**/.lock') }}
+          name: kotlin-result-jar
 
-      - name: Setup JDK
-        uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4.1.0
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          distribution: temurin
-          java-version: 8
+          name: "Automated Release - ${{ github.sha }}"
+          tag_name: "release-${{ github.sha }}"
+          files: kotlin-result-jvm-*.jar
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # v3.1.0
-
-      - name: Publish with Gradle Wrapper
-        run: ./gradlew ${{ matrix.tasks }}
-        env:
-          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
-          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
+#  publish:
+#    name: Publish on ${{ matrix.os }}
+#    runs-on: ${{ matrix.os }}
+#    if: github.ref == 'refs/heads/master' && github.repository == 'michaelbull/kotlin-result'
+#    needs: build
+#
+#    strategy:
+#      matrix:
+#        include:
+#          - os: ubuntu-latest
+#            tasks: >
+#              publishAndroidNativeArm32PublicationToMavenRepository
+#              publishAndroidNativeArm64PublicationToMavenRepository
+#              publishAndroidNativeX64PublicationToMavenRepository
+#              publishAndroidNativeX86PublicationToMavenRepository
+#              publishJsPublicationToMavenRepository
+#              publishJvmPublicationToMavenRepository
+#              publishKotlinMultiplatformPublicationToMavenRepository
+#              publishLinuxArm64PublicationToMavenRepository
+#              publishLinuxX64PublicationToMavenRepository
+#              publishWasmJsPublicationToMavenRepository
+#
+#          - os: windows-latest
+#            tasks: publishMingwX64PublicationToMavenRepository
+#
+#          - os: macos-latest
+#            tasks: >
+#              publishIosArm64PublicationToMavenRepository
+#              publishIosSimulatorArm64PublicationToMavenRepository
+#              publishIosX64PublicationToMavenRepository
+#              publishMacosArm64PublicationToMavenRepository
+#              publishMacosX64PublicationToMavenRepository
+#              publishTvosArm64PublicationToMavenRepository
+#              publishTvosSimulatorArm64PublicationToMavenRepository
+#              publishTvosX64PublicationToMavenRepository
+#              publishWatchosArm32PublicationToMavenRepository
+#              publishWatchosArm64PublicationToMavenRepository
+#              publishWatchosDeviceArm64PublicationToMavenRepository
+#              publishWatchosSimulatorArm64PublicationToMavenRepository
+#              publishWatchosX64PublicationToMavenRepository
+#
+#    steps:
+#      - name: Checkout Project
+#        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+#
+#      - name: Validate Gradle Wrapper
+#        uses: gradle/wrapper-validation-action@699bb18358f12c5b78b37bb0111d3a0e2276e0e2 # v2.1.1
+#
+#      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+#        with:
+#          path: |
+#            ~/.konan
+#          key: ${{ runner.os }}-${{ hashFiles('**/.lock') }}
+#
+#      - name: Setup JDK
+#        uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4.1.0
+#        with:
+#          distribution: temurin
+#          java-version: 8
+#
+#      - name: Setup Gradle
+#        uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # v3.1.0
+#
+#      - name: Publish with Gradle Wrapper
+#        run: ./gradlew ${{ matrix.tasks }}
+#        env:
+#          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
+#          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
+#          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
+#          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
+#          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
