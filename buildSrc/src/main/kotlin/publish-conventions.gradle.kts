@@ -194,4 +194,6 @@ signing {
 
     useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
     sign(publishing.publications)
+    // https://docs.gradle.org/current/userguide/signing_plugin.html#sec:conditional_signing
+    setRequired({ gradle.taskGraph.hasTask("publish") })
 }
